@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  varnish:
+    build: ./varnish
+    ports:
+      - "8080:8080"
+    networks:
+      - proxy_network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "500M"  # 500 MB
+        reservations:
+          cpus: "0.5"
+          memory: "500M"
+    environment:
+      ORG1_CACHE_MAX_SIZE: "3221225472"  # 3GB
+      ORG2_CACHE_MAX_SIZE: "1073741824"  # 1GB
+      DEFAULT_CACHE_MAX_SIZE: "1048576"   # 1MB
+    command: 
+       -s default=malloc,1G
+       -s org1=malloc,3G
+       -s org2=malloc,1G
+
+networks:
+  proxy_network:
+    driver: bridge
