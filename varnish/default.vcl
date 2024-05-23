@@ -2,21 +2,20 @@ vcl 4.1;
 import std;
 
 backend default {
-    .host = "envoy_new";
+    .host = "router";
     .port = "9096";
+
 }
 
 acl purge {
     "localhost";
-    "envoy_new";
+   # "envoy_new";
 }
 
 sub vcl_recv {
-     # after adding ext_authz filter
-     unset req.http.authorization;
 
-     set req.http.Host = req.http.redirect-backend;
-     set req.url = req.http.x-temp-path;
+     set req.http.Host = req.http.x-wso2-actual-host;
+     set req.url = req.http.x-wso2-request-path;
      set req.url = std.querysort(req.url);
 
      if (req.method == "PURGE") {
@@ -30,21 +29,20 @@ sub vcl_recv {
 
 
 sub vcl_miss {
-    if (req.http.x-cluster-header == "varnish_backend_cluster") {
-        set req.http.x-cluster-header = req.http.redirect-backend;  
-    } 
-        return (fetch);
+
+    set req.http.x-wso2-cluster-header = req.http.x-wso2-actual-cluster; 
+    return (fetch);
     
 }
 
 sub vcl_backend_fetch {
-    if (bereq.http.x-temp-path) {
-        set bereq.url = bereq.http.x-temp-path;
+    if (bereq.http.x-wso2-request-path) {
+        
+        set bereq.url = bereq.http.x-wso2-request-path;
         set bereq.url = std.querysort(bereq.url);
+        unset bereq.http.x-wso2-request-path;
+        unset bereq.http.x-wso2-actual-cluster;
     }
-
-    
-
 }
 
 sub vcl_backend_response {
@@ -55,35 +53,17 @@ sub vcl_backend_response {
     }
 
 
-    # Determine the appropriate storage and check response size against available storage size
-    if (bereq.url ~ "/org1/") {
-        if (std.integer(beresp.http.Content-Length, 0) > std.integer(std.getenv("ORG1_CACHE_MAX_SIZE"), 0)) {
-            set beresp.uncacheable = true;
-            return (deliver);
-        }
+    # Determine the appropriate storage
+    if (bereq.http.x-cache-partition == "org1") {
         set beresp.storage = storage.org1;
-        # set beresp.storage = req.http.x-cache-partition;
-        set beresp.http.x-storage = "org1";
-    } elsif (bereq.url ~ "/org2/") {
-        if (std.integer(beresp.http.Content-Length, 0) > std.integer(std.getenv("ORG2_CACHE_MAX_SIZE"), 0)) {
-            set beresp.uncacheable = true;
-            return (deliver);
-        }
+    } else if (bereq.http.x-cache-partition == "org2") {
         set beresp.storage = storage.org2;
-        set beresp.http.x-storage = "org2";
     } else {
-          if (std.integer(beresp.http.Content-Length, 0) > 1048576) {
-            set beresp.uncacheable = true;
-            return (deliver);
-        }
-        set beresp.storage = storage.default; // Default storage
-        set beresp.http.x-storage = "default";
+        set beresp.storage = storage.default;
     }
-
+    set beresp.http.x-storage = bereq.http.x-cache-partition;
 
 }
-
-
 
 
 sub vcl_deliver {

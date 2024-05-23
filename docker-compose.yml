@@ -1,12 +1,12 @@
-version: "3.8"
+version: "3.7"
 
 services:
   varnish:
     build: ./varnish
     ports:
-      - "8080:8080"
+      - "8080:80"
     networks:
-      - proxy_network
+      - varnish_network
     deploy:
       resources:
         limits:
@@ -25,5 +25,6 @@ services:
        -s org2=malloc,1G
 
 networks:
-  proxy_network:
-    driver: bridge
+  varnish_network:
+    external: true
+    
