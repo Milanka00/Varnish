@@ -9,7 +9,7 @@ backend default {
 
 acl purge {
     "localhost";
-   # "envoy_new";
+   # "router";
 }
 
 sub vcl_recv {
@@ -50,6 +50,10 @@ sub vcl_backend_response {
     # Don't cache 404 responses
     if (beresp.status == 404) {
         set beresp.uncacheable = true;
+    }
+
+    if (bereq.http.x-cache-default-ttl) {
+        set beresp.ttl = std.duration(bereq.http.x-cache-default-ttl + "s", 120s);
     }
 
 
