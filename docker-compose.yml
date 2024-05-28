@@ -23,6 +23,22 @@ services:
        -s default=malloc,1G
        -s org1=malloc,3G
        -s org2=malloc,1G
+  
+  backend:
+    build: ./backend
+    ports:
+      - "8083:8083"
+    networks:
+      - varnish_network
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "1G"  # 1 GB
+        reservations:
+          cpus: "2.0"
+          memory: "1G"
+  
 
 networks:
   varnish_network:
