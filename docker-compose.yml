@@ -38,6 +38,21 @@ services:
         reservations:
           cpus: "2.0"
           memory: "1G"
+
+  backend-second:
+    build: ./backend-second
+    ports:
+      - "8084:8084"
+    networks:
+      - varnish_network
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "1G"  # 1 GB
+        reservations:
+          cpus: "2.0"
+          memory: "1G"
   
 
 networks:
