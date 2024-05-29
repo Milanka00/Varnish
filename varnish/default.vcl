@@ -56,6 +56,12 @@ sub vcl_backend_response {
         set beresp.ttl = std.duration(bereq.http.x-cache-default-ttl + "s", 120s);
     }
 
+    
+    # aloows to respect the must-revalidate cache-control header
+    if(beresp.http.Cache-Control ~ "must-revalidate") {
+        set beresp.grace = 0s;
+    }
+
 
     # Determine the appropriate storage
     if (bereq.http.x-cache-partition == "org1") {
