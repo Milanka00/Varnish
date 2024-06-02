@@ -4,15 +4,23 @@ import std;
 backend default {
     .host = "router";
     .port = "9096";
-
 }
 
 acl purge {
     "localhost";
-   # "router";
+    "router";
 }
 
 sub vcl_recv {
+
+    #liveness and rediness
+    if (req.url == "/varnish-ping") {
+        return(synth(200));
+    }
+        
+    if (req.url == "/varnish-ready") {
+        return(synth(200));
+    }
 
      set req.http.Host = req.http.x-wso2-actual-host;
      set req.url = req.http.x-wso2-request-path;
@@ -47,12 +55,14 @@ sub vcl_backend_fetch {
 
 sub vcl_backend_response {
 
-    # Don't cache 404 responses
-    if (beresp.status == 404) {
+    # List of status codes that should be marked as uncacheable
+    if (beresp.status == 300 || beresp.status == 301 || beresp.status == 302 ||
+        beresp.status == 307 || beresp.status == 304 || beresp.status == 404 ||
+        beresp.status == 410 || beresp.status == 414) {
         set beresp.uncacheable = true;
     }
 
-    if (bereq.http.x-cache-default-ttl) {
+    if (bereq.http.x-cache-default-ttl && !beresp.http.Cache-Control) {
         set beresp.ttl = std.duration(bereq.http.x-cache-default-ttl + "s", 120s);
     }
 
@@ -62,16 +72,24 @@ sub vcl_backend_response {
         set beresp.grace = 0s;
     }
 
-
     # Determine the appropriate storage
-    if (bereq.http.x-cache-partition == "org1") {
-        set beresp.storage = storage.org1;
-    } else if (bereq.http.x-cache-partition == "org2") {
-        set beresp.storage = storage.org2;
+    if (bereq.http.x-cache-partition == "slot1") {
+        set beresp.storage = storage.slot1;
+    } else if (bereq.http.x-cache-partition == "slot2") {
+        set beresp.storage = storage.slot2;
     } else {
         set beresp.storage = storage.default;
     }
-    set beresp.http.x-storage = bereq.http.x-cache-partition;
+
+    
+    if (beresp.storage == storage.default) {
+        set beresp.http.x-storage = "default";
+    } else{
+        set beresp.http.x-storage = bereq.http.x-cache-partition;
+    }
+
+   
+    
 
 }
 
