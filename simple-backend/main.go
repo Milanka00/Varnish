@@ -23,9 +23,35 @@ func main() {
 		InfoHandler(w, r)
 	})
 
+	http.HandleFunc("/data/v1/queryresource", func(w http.ResponseWriter, r *http.Request) {
+		QueryResourceHandler(w, r)
+	})
+
+
 	// Start server
 	fmt.Println("Server is listening on port 8084...")
 	http.ListenAndServe(":8084", nil)
+}
+
+func QueryResourceHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Query handler invoked")
+
+	queryParams := r.URL.Query()
+	param1 := queryParams.Get("param1")
+	param2 := queryParams.Get("param2")
+	param3 := queryParams.Get("param3")
+
+	if param1 == "" || param2 == "" || param3 == "" {
+		http.Error(w, "Missing query parameters", http.StatusBadRequest)
+		return
+	}
+
+	response := fmt.Sprintf("param1: %s, param2: %s, param3: %s", param1, param2, param3)
+
+	// Write response
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(response))
 }
 
 func PublicDataHandler(w http.ResponseWriter, r *http.Request) {

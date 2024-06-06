@@ -39,8 +39,7 @@ sub vcl_recv {
 sub vcl_miss {
 
     set req.http.x-wso2-cluster-header = req.http.x-wso2-actual-cluster; 
-    return (fetch);
-    
+    return (fetch);   
 }
 
 sub vcl_backend_fetch {
@@ -87,12 +86,7 @@ sub vcl_backend_response {
     } else{
         set beresp.http.x-storage = bereq.http.x-cache-partition;
     }
-
-   
-    
-
 }
-
 
 sub vcl_deliver {
     if (obj.hits > 0) {
