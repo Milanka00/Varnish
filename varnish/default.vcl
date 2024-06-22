@@ -9,6 +9,9 @@ backend default {
 acl purge {
     "localhost";
     "router";
+    "varnish";
+    "192.168.0.1";
+
 }
 
 sub vcl_recv {
@@ -22,17 +25,23 @@ sub vcl_recv {
         return(synth(200));
     }
 
+    if (req.method == "PURGE") {
+        if (!client.ip ~ purge) {
+        return(synth(405));
+        }
+        if(!req.http.x-invalidate-pattern) {
+        return(purge);
+        }
+        ban("req.url ~ " + req.http.x-invalidate-pattern 
+        + " && req.http.host == " + req.http.host);
+        return (synth(200,"Ban added"));
+    }
+
      set req.http.Host = req.http.x-wso2-actual-host;
      set req.url = req.http.x-wso2-request-path;
      set req.url = std.querysort(req.url);
 
-     if (req.method == "PURGE") {
-		# check if the client is allowed to purge content
-		if (!client.ip ~ purge) {
-			return(synth(405,"Not allowed."));
-		}
-		return (purge);
-	}
+
 }
 
 
@@ -44,7 +53,7 @@ sub vcl_miss {
 
 sub vcl_backend_fetch {
     if (bereq.http.x-wso2-request-path) {
-        
+       
         set bereq.url = bereq.http.x-wso2-request-path;
         set bereq.url = std.querysort(bereq.url);
         unset bereq.http.x-wso2-request-path;

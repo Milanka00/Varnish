@@ -20,7 +20,7 @@ services:
        -s slot1=malloc,1G
        -s slot2=malloc,1G
   
-  backend:
+  caching-supported-backend:
     build: ./caching-supported-backend
     ports:
       - "8083:8083"
@@ -35,7 +35,7 @@ services:
           cpus: "2.0"
           memory: "1G"
 
-  backend-second:
+  simple-backend:
     build: ./simple-backend
     ports:
       - "8084:8084"
