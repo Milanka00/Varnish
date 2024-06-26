@@ -61,6 +61,12 @@ func PublicCacheHandler(w http.ResponseWriter, r *http.Request) {
 	// 	http.Error(w, "User information missing", http.StatusUnauthorized)
 	// 	return
 	// }
+		// Check CORS preflight request
+	if r.Method == "OPTIONS" {
+			w.Header().Set("Access-Control-Allow-Origin", "http://example.com") // Replace with your allowed origin
+			w.WriteHeader(http.StatusOK)
+			return
+	}
 	log.Println("PublicCacheHandler invoked")
 
 	id, err := strconv.Atoi(r.URL.Path[len("/responsecache/v1/publiccache/"):])
